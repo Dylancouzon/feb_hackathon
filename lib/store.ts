@@ -6,6 +6,7 @@ export type Event = {
   latitude: number;
   longitude: number;
   participants: string[];
+  category?: string;
   aiEnhanced?: {
     weather?: string;
     nearbySuggestion?: string;
@@ -22,7 +23,8 @@ const events: Event[] = [
     datetime: "2025-02-15T10:00:00",
     latitude: 40.7089,
     longitude: -73.9572,
-    participants: ["Dylan C", "Alex K"],
+    participants: ["Alex K"],
+    category: "Coffee",
     aiEnhanced: {
       weather: "Partly cloudy, high 48°F. Good for a jacket.",
       nearbySuggestion: "Devoción (Williamsburg) — specialty coffee, plenty of seating.",
@@ -36,7 +38,8 @@ const events: Event[] = [
     datetime: "2025-02-16T17:30:00",
     latitude: 40.6782,
     longitude: -73.9442,
-    participants: ["Dylan C", "Morgan L"],
+    participants: ["Morgan L"],
+    category: "Rooftop",
     aiEnhanced: {
       weather: "Clear evening, low 40s°F. Bring a layer for the roof.",
       nearbySuggestion: "Westlight or Elsewhere — rooftop bars with skyline views in Williamsburg.",
@@ -50,7 +53,8 @@ const events: Event[] = [
     datetime: "2025-02-17T09:00:00",
     latitude: 40.7829,
     longitude: -73.9654,
-    participants: ["Dylan C", "Sam R", "Jordan L"],
+    participants: ["Sam R", "Jordan L"],
+    category: "Outdoors",
     aiEnhanced: {
       weather: "Sunny, high 50°F. Good for a light jacket.",
       nearbySuggestion: "Reservoir loop (~1.5 mi). Coffee at Bluestone Lane or Le Pain Quotidien after.",
@@ -92,5 +96,12 @@ export function updateEventAiEnhanced(
   const event = events.find((e) => e.id === eventId);
   if (!event) return null;
   event.aiEnhanced = aiEnhanced;
+  return event;
+}
+
+export function updateEventCategory(eventId: string, category: string): Event | null {
+  const event = events.find((e) => e.id === eventId);
+  if (!event) return null;
+  event.category = category;
   return event;
 }

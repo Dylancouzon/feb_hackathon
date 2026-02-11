@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import dynamic from "next/dynamic";
-import { getEvents, addEvent, joinEvent, updateEventAiEnhanced } from "@/lib/store";
+import { getEvents, addEvent, joinEvent, updateEventAiEnhanced, updateEventCategory } from "@/lib/store";
 import type { Event } from "@/lib/store";
 import MapView from "@/components/MapView";
 import CreateEventModal from "@/components/CreateEventModal";
@@ -51,14 +51,17 @@ export default function Home() {
       const data = await res.json();
       const updated = data.event as Event;
       const aiEnhanced = updated?.aiEnhanced ?? fallback;
+      const category = updated?.category ?? "Hangout";
       updateEventAiEnhanced(eventId, aiEnhanced);
+      updateEventCategory(eventId, category);
       setEvents((prev) =>
-        prev.map((e) => (e.id === eventId ? { ...e, aiEnhanced } : e))
+        prev.map((e) => (e.id === eventId ? { ...e, aiEnhanced, category } : e))
       );
     } catch {
       updateEventAiEnhanced(eventId, fallback);
+      updateEventCategory(eventId, "Hangout");
       setEvents((prev) =>
-        prev.map((e) => (e.id === eventId ? { ...e, aiEnhanced: fallback } : e))
+        prev.map((e) => (e.id === eventId ? { ...e, aiEnhanced: fallback, category: "Hangout" } : e))
       );
     } finally {
       setEnhancingId(null);

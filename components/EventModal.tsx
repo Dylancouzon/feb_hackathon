@@ -42,9 +42,9 @@ export default function EventModal({
         <div className="p-6">
           <div className="flex justify-between items-start gap-2 mb-3">
             <div className="min-w-0">
-              {event.aiEnhanced && (
-                <span className="inline-block px-2 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-accent mb-2">
-                  AI suggestions
+              {event.category && (
+                <span className="inline-block px-2 py-0.5 text-xs font-medium rounded-full bg-gray-200 text-gray-700 mb-2">
+                  {event.category}
                 </span>
               )}
               <h2 className="text-xl font-semibold text-gray-900 truncate">{event.title}</h2>
@@ -69,26 +69,31 @@ export default function EventModal({
               {isEnhancing ? (
                 <p className="text-sm text-gray-600">AI is planning your meetup…</p>
               ) : (
-                <ul className="space-y-2 text-sm text-gray-700">
-                  {event.aiEnhanced?.weather && (
-                    <li>
-                      <span className="font-medium text-gray-600">Weather:</span>{" "}
-                      {event.aiEnhanced.weather}
-                    </li>
-                  )}
-                  {event.aiEnhanced?.nearbySuggestion && (
-                    <li>
-                      <span className="font-medium text-gray-600">Nearby:</span>{" "}
-                      {event.aiEnhanced.nearbySuggestion}
-                    </li>
-                  )}
-                  {event.aiEnhanced?.backupPlan && (
-                    <li>
-                      <span className="font-medium text-gray-600">Backup:</span>{" "}
-                      {event.aiEnhanced.backupPlan}
-                    </li>
-                  )}
-                </ul>
+                <>
+                  <ul className="space-y-2 text-sm text-gray-700">
+                    {event.aiEnhanced?.weather && (
+                      <li>
+                        <span className="font-medium text-gray-600">Weather:</span>{" "}
+                        {event.aiEnhanced.weather}
+                      </li>
+                    )}
+                    {event.aiEnhanced?.nearbySuggestion && (
+                      <li>
+                        <span className="font-medium text-gray-600">Nearby:</span>{" "}
+                        {event.aiEnhanced.nearbySuggestion}
+                      </li>
+                    )}
+                    {event.aiEnhanced?.backupPlan && (
+                      <li>
+                        <span className="font-medium text-gray-600">Backup:</span>{" "}
+                        {event.aiEnhanced.backupPlan}
+                      </li>
+                    )}
+                  </ul>
+                  <p className="text-xs text-gray-500 mt-3 pt-2 border-t border-blue-100">
+                    Powered by Tavily & OpenAI
+                  </p>
+                </>
               )}
             </div>
           )}

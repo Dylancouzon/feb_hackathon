@@ -3,6 +3,8 @@
 import { useState } from "react";
 import type { Event } from "@/lib/store";
 
+const CURRENT_USER = "Dylan C";
+
 type ActivityChatsViewProps = {
   events: Event[];
 };
@@ -19,7 +21,6 @@ function formatDate(iso: string) {
 const FAKE_MESSAGES: Record<string, { who: string; text: string }[]> = {
   "evt-1": [
     { who: "Alex K", text: "I’ll be there around 10:15" },
-    { who: "Dylan C", text: "Sounds good, I’ll grab a table" },
   ],
   "evt-2": [
     { who: "Morgan L", text: "Bringing a bottle of red 👋" },
@@ -35,8 +36,9 @@ function getFakeMessages(eventId: string) {
 }
 
 export default function ActivityChatsView({ events }: ActivityChatsViewProps) {
+  const myEvents = events.filter((e) => e.participants.includes(CURRENT_USER));
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
-  const selectedEvent = selectedEventId ? events.find((e) => e.id === selectedEventId) : null;
+  const selectedEvent = selectedEventId ? myEvents.find((e) => e.id === selectedEventId) : null;
   const messages = selectedEventId ? getFakeMessages(selectedEventId) : [];
 
   if (selectedEvent) {
@@ -91,9 +93,14 @@ export default function ActivityChatsView({ events }: ActivityChatsViewProps) {
       <div className="p-4 space-y-1">
         <h2 className="text-sm font-medium text-gray-500 px-2 mb-3">Activity Chats</h2>
         <p className="text-sm text-gray-500 px-2 mb-3">
-          Group chat for each activity. Tap to open.
+          Chats for activities you’ve joined. Tap to open.
         </p>
-        {events.map((event) => (
+        {myEvents.length === 0 ? (
+          <p className="text-sm text-gray-500 px-2 py-4">
+            Join an activity from the Map to see its chat here.
+          </p>
+        ) : (
+          myEvents.map((event) => (
           <button
             key={event.id}
             type="button"
@@ -112,7 +119,7 @@ export default function ActivityChatsView({ events }: ActivityChatsViewProps) {
             </div>
             <span className="text-gray-400">›</span>
           </button>
-        ))}
+        )))}
       </div>
     </div>
   );
