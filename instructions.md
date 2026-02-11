@@ -80,7 +80,7 @@ type Event = {
 
 **Seed data:** Exactly 3 events. **All three** must have:
 - `aiEnhanced` with `weather`, `nearbySuggestion`, `backupPlan` (pre-filled for demo).
-- **"Dylan C"** in `participants` (demo user is in every seeded activity).
+- **"Dylan C"** in `participants` (demo user is in 2/3 seeded activity).
 
 Example seed: Coffee at Devoción (Williamsburg), Rooftop Sunset (Brooklyn), Central Park Walk. Use real-looking NYC coordinates and dates.
 
