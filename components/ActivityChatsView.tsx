@@ -81,7 +81,7 @@ export default function ActivityChatsView({ events }: ActivityChatsViewProps) {
         </div>
         <div className="p-3 bg-white border-t border-gray-200">
           <div className="flex items-center gap-2 px-4 py-2.5 bg-gray-100 rounded-full text-gray-400 text-sm">
-            Message (demo only)
+            Message
           </div>
         </div>
       </div>

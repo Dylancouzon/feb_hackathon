@@ -9,7 +9,7 @@ type TabBarProps = {
 
 const TABS: { id: TabId; label: string; icon: string }[] = [
   { id: "map", label: "Map", icon: "🗺" },
-  { id: "friends", label: "Friends", icon: "👥" },
+  { id: "friends", label: "Community", icon: "👥" },
   { id: "chats", label: "Activity Chats", icon: "💬" },
 ];
 

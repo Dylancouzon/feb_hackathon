@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { Event } from "@/lib/store";
+import { PARTICIPANT_SCORES } from "@/lib/communityScores";
 
 const DEMO_USER = "Dylan C";
 
@@ -102,12 +103,28 @@ export default function EventModal({
             <h3 className="text-sm font-medium text-gray-700 mb-1">
               Participants ({event.participants.length})
             </h3>
-            <ul className="text-sm text-gray-600">
-              {event.participants.map((p) => (
-                <li key={p} className={p === DEMO_USER ? "font-medium text-accent" : ""}>
-                  {p === DEMO_USER ? `${p} (you)` : p}
-                </li>
-              ))}
+            <ul className="text-sm text-gray-600 space-y-1.5">
+              {event.participants.map((p) => {
+                const scores = PARTICIPANT_SCORES[p];
+                return (
+                  <li
+                    key={p}
+                    className={`flex items-center justify-between gap-2 ${p === DEMO_USER ? "font-medium text-accent" : ""}`}
+                  >
+                    <span>{p === DEMO_USER ? `${p} (you)` : p}</span>
+                    {scores && (
+                      <span className="flex items-center gap-2 shrink-0">
+                        <span className="text-xs font-medium text-emerald-600">
+                          {scores.showUp}%
+                        </span>
+                        <span className="text-xs font-medium text-amber-600">
+                          {scores.vibe}/5
+                        </span>
+                      </span>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           </div>
 
