@@ -80,8 +80,6 @@ type Event = {
 
 **Seed data:** Exactly 3 events. **All three** must have:
 - `aiEnhanced` with `weather`, `nearbySuggestion`, `backupPlan` (pre-filled for demo).
-- **`category`** hardcoded (e.g. "Coffee", "Rooftop", "Outdoors") for the pill in the UI.
-- **Do not** put "Dylan C" in `participants` for seed events — the user joins manually during the demo (e.g. Alex K, Morgan L, Sam R, Jordan L only).
 
 Example seed: Coffee at Devoción (Williamsburg), Rooftop Sunset (Brooklyn), Central Park Walk. Use real-looking NYC coordinates and dates.
 
