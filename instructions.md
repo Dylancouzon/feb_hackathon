@@ -4,7 +4,7 @@ AI-powered IRL meetup coordination app for NYC.
 ## Goal
 Build a minimal, clean MVP in Next.js where:
 - Users create activity pins on a map and join activities.
-- An AI orchestration endpoint enhances every new event (weather, nearby venues, backup plan) using Tavily + OpenAI.
+- A **custom agent (Phinite)** enhances every new event (weather, nearby venues, backup plan, category).
 - A bottom tab bar has Map, Friends (hardcoded list), and Activity Chats (fake group chat UI per activity).
 - The UI is map-first, minimal, and demo-ready.
 
@@ -18,31 +18,30 @@ This is a hackathon MVP. Focus on clarity and a strong AI demo.
 - TypeScript
 - Tailwind CSS
 - Mapbox GL JS + react-map-gl
-- OpenAI (gpt-4o-mini for AI enhancement)
-- Tavily (web search for weather + venues)
+- **Phinite** — custom agent for AI enhancement (weather, nearby venues, backup plan, category)
 - In-memory store (no DB)
 
 ---
 
-## Environment & API Keys
+## Environment
 
-Copy `env.txt` to `.env.local`. Required variables:
+Copy `.env.example` to `.env.local` and fill in your values. Placeholders:
 
 - `NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN` — Mapbox (mapbox.com). **Must be NEXT_PUBLIC_** so the client can load the map.
-- `TAVILY_API_KEY` — Tavily (tavily.com)
-- `OPENAI_API_KEY` — OpenAI (platform.openai.com)
+- `PHINITE_API_KEY` — API key for your Phinite custom agent.
+- `PHINITE_AGENT_URL` — Base URL or endpoint for the Phinite agent (e.g. `https://api.phinite.ai/v1/agents/...` or your deployed agent URL).
 
-If Tavily or OpenAI fail, use hardcoded fallback values; no retries or complex error UI.
+If the Phinite agent call fails, use hardcoded fallback values; no retries or complex error UI.
 
 ---
 
 ## Layout & Navigation
 
 - **Top bar:** Centered “Actually Hang”, white/translucent, full width.
-- **Content area:** Switches by tab (Map | Friends | Activity Chats). Use state e.g. `activeTab: "map" | "friends" | "chats"`.
+- **Content area:** Switches by tab (Map | Community | Activity Chats). Use state e.g. `activeTab: "map" | "friends" | "chats"` (tab id can stay `"friends"`; display label “Community”).
 - **Bottom tab bar:** Always visible. Three tabs:
   - **Map** — icon + label “Map”
-  - **Friends** — icon + label “Friends”
+  - **Community** — icon + label “Community” (id: `friends`)
   - **Activity Chats** — icon + label “Activity Chats”
 - Active tab uses accent color (blue); inactive tabs are gray. One accent color for the whole app (e.g. blue).
 
@@ -63,6 +62,7 @@ type Event = {
   latitude: number;
   longitude: number;
   participants: string[];
+  category?: string;   // e.g. "Coffee", "Outdoors", "Rooftop" — AI-generated on create, hardcoded for seed
   aiEnhanced?: {
     weather?: string;
     nearbySuggestion?: string;
@@ -71,7 +71,7 @@ type Event = {
 };
 ```
 
-**Store:** In-memory array. Export: `getEvents()`, `getEventById(id)`, `addEvent(event)`, `joinEvent(eventId, name)`, `updateEventAiEnhanced(eventId, aiEnhanced)`.
+**Store:** In-memory array. Export: `getEvents()`, `getEventById(id)`, `addEvent(event)`, `joinEvent(eventId, name)`, `updateEventAiEnhanced(eventId, aiEnhanced)`, `updateEventCategory(eventId, category)`.
 
 **addEvent:**
 - Accepts `Omit<Event, "id" | "participants">`.
@@ -80,7 +80,6 @@ type Event = {
 
 **Seed data:** Exactly 3 events. **All three** must have:
 - `aiEnhanced` with `weather`, `nearbySuggestion`, `backupPlan` (pre-filled for demo).
-- **"Dylan C"** in `participants` (demo user is in 2/3 seeded activity).
 
 Example seed: Coffee at Devoción (Williamsburg), Rooftop Sunset (Brooklyn), Central Park Walk. Use real-looking NYC coordinates and dates.
 
@@ -106,45 +105,48 @@ Example seed: Coffee at Devoción (Williamsburg), Rooftop Sunset (Brooklyn), Cen
 ## Event Detail (Map Tab)
 
 When a pin is selected, show a bottom sheet / modal with:
+- **Category pill** at the top (if `event.category`): small rounded pill with the category label (e.g. Coffee, Outdoors). Use a neutral style (e.g. gray background). Do **not** show an “AI suggestions” pill.
 - Title, date/time (formatted), description.
-- **AI suggestions** block (only if `event.aiEnhanced` exists or `isEnhancing` is true): heading “AI suggestions”, then weather, nearby suggestion, backup plan. If `isEnhancing` is true, show “AI is planning your meetup…” instead of the list. Use a subtle blue-tinted background for this block. Badge “AI suggestions” when enhanced.
-- **Participants:** List names. If the participant is “Dylan C”, show “Dylan C (you)” and style it (e.g. accent color). **Do not** add a separate “Dylan C (you)” line in addition to the list—Dylan C is already in `participants` after join, so render once with “(you)” suffix only for that name.
+- **AI suggestions** block (only if `event.aiEnhanced` exists or `isEnhancing` is true): heading “AI suggestions”, then weather, nearby suggestion, backup plan. If `isEnhancing` is true, show “AI is planning your meetup…” instead of the list. Use a subtle blue-tinted background. At the **bottom** of this block, add small text: **“Powered by Phinite”** (with a light divider above it).
+- **Participants:** List names; if the participant is “Dylan C”, show “Dylan C (you)” and style it (e.g. accent color). **Do not** add a separate “Dylan C (you)” line. For each participant, when they exist in the shared scores map, show **two scores** on the same row (ShowUp % and Vibe /5) using the **same two color styles** as in the Community tab (e.g. emerald and amber); no labels needed in the list—the colors convey meaning. Use the same `PARTICIPANT_SCORES` (or equivalent) map as the Community tab.
 - **Join** button: only if current user (“Dylan C”) is not already in `participants`. On click, call `joinEvent(eventId, "Dylan C")` and update state.
 - No “Enhance with AI” button. AI runs automatically on create (see below).
 
 ---
 
-## AI Enhancement
+## AI Enhancement (Phinite custom agent)
 
 - **When:** Automatically when a **new event is created**. After saving the event and adding the creator as participant, call the enhance API in the background. Show “AI is planning your meetup…” in the event detail until the response is back.
-- **No manual “Enhance with AI” button.** Do not ask OpenAI for an “improved description”; only weather, nearby suggestion, and backup plan.
+- **No manual “Enhance with AI” button.** Enhancement is done by a **custom agent built with Phinite**, which returns weather, nearby suggestion, backup plan, and category.
 
 **Endpoint:** `POST /api/enhance`
 - Body: `{ "event": { ...full event object } }`.
 - If event id missing, return 400.
 
 **Logic:**
-1. **Tavily:** With `TAVILY_API_KEY`, run two searches (e.g. `@tavily/core`, `tavily({ apiKey })`, then `client.search(...)`):
-   - Weather for event date in NYC (e.g. “NYC New York weather forecast [formatted date]”).
-   - Nearby venues (e.g. “things to do venues near [lat],[lng] NYC”).
-2. **OpenAI:** With `OPENAI_API_KEY`, call Chat Completions (e.g. `gpt-4o-mini`), `response_format: { type: "json_object" }`. System prompt: return a JSON object with **only** these keys: `weather`, `nearbySuggestion`, `backupPlan`. One–two sentences each. Explicitly say: do not add or rewrite the event description. User message: event title/description/date/location + raw Tavily results.
-3. Parse the JSON and validate that each value is a string; otherwise use fallbacks.
-4. **Fallbacks** (if Tavily or OpenAI fails or keys missing): e.g. “Check a weather app for the day.”, “Search for venues near the pin.”, “Pick another spot or reschedule.”
-5. Update the event in the store with `updateEventAiEnhanced(eventId, aiEnhanced)` if the event exists; then return `{ event: updatedEvent }` (or `{ event: { ...event, aiEnhanced } }` if event was client-only and not in server store). Frontend merges the returned `aiEnhanced` into state so the detail view re-renders with the AI block.
+1. **Call your Phinite custom agent** using `PHINITE_API_KEY` and `PHINITE_AGENT_URL`. Send the event (title, description, datetime, latitude, longitude) in the format your agent expects (e.g. JSON body or agent-specific schema).
+2. The agent should return (or you parse from its response) a JSON object with: `weather`, `nearbySuggestion`, `backupPlan`, **`category`**. Each value a string; **category** is a single word or short phrase (e.g. Coffee, Outdoors, Rooftop).
+3. Parse and validate; if any value is missing or not a string, use fallbacks. Category fallback e.g. `"Hangout"`.
+4. **Fallbacks** (if the agent call fails or keys are missing): e.g. “Check a weather app for the day.”, “Search for venues near the pin.”, “Pick another spot or reschedule.”; category fallback `"Hangout"`.
+5. Update the event in the store with `updateEventAiEnhanced(eventId, aiEnhanced)` and `updateEventCategory(eventId, category)` when the event exists. Return `{ event: updatedEvent }` (or `{ event: { ...event, aiEnhanced, category } }` if event was client-only). Frontend merges the returned `aiEnhanced` and `category` into state so the detail view re-renders with the AI block and category pill.
 
 ---
 
-## Friends Tab
+## Community Tab
 
-- **UI only.** No real friend graph or auth.
-- Single view: a **hardcoded list** of friends. Each row: avatar (e.g. initials in a circle), name, status line (e.g. “Joined Coffee at Devoción”, “Free this weekend”). Use 5–6 names; a few can match the seeded event participants (Alex K, Morgan L, Sam R, Jordan L) plus 1–2 others. Styling: cards on light gray background, accent for avatar.
+- **UI only.** No real friend graph or auth. Tab label: **“Community”**; view heading: “Community”.
+- Single view: a **hardcoded list** of people. Each card: avatar (e.g. initials in a circle), name, status line (e.g. “Joined Coffee at Devoción”, “Free this weekend”). Below that: **interest pills** (e.g. Coffee, Outdoors, Bars, Rooftops) — small rounded gray tags. At the bottom of each card, two scores with **two distinct color styles** (e.g. emerald for one, amber for the other):
+  - **ShowUp** — reliability as a percentage (e.g. 98%, 92%).
+  - **Vibe** — community rating from others, e.g. 4.8/5.
+- Use 5–6 names; a few can match the seeded event participants (Alex K, Morgan L, Sam R, Jordan L) plus 1–2 others. Styling: cards on light gray background, accent for avatar. Keep scores in a **shared map** (e.g. `lib/communityScores.ts`: name → `{ showUp, vibe }`) so the event detail can show the same scores in the participants list.
 
 ---
 
 ## Activity Chats Tab
 
 - **UI only.** No real messaging or persistence.
-- **List view:** One row per event (from `getEvents()`). Show event title, formatted date, participant count. Tapping a row opens that activity’s “chat.”
+- **Filter:** Only show events where the **current user (“Dylan C”) is in `participants`**. Use `events.filter(e => e.participants.includes("Dylan C"))`. So the user only sees chats for activities they’ve joined.
+- **List view:** One row per **filtered** event. Subtitle/copy: “Chats for activities you’ve joined. Tap to open.” Show event title, formatted date, participant count. Tapping a row opens that activity’s “chat.” When there are **no** events (user hasn’t joined any), show: “Join an activity from the Map to see its chat here.”
 - **Chat view:** Fake group chat for that activity. Header with “← Back”, event title, participant count. Body: a few **hardcoded placeholder messages** per activity (e.g. for evt-1: “Alex K: I’ll be there around 10:15”, “Dylan C: Sounds good…”). Messages from “Dylan C” aligned right with accent bubble; others left with white/gray bubble. Bottom: a disabled or non-functional input (e.g. “Message (demo only)”). For events not in the fake list, show one line: “No messages yet. Say hi when you’re there!”
 - Back returns to the list.
 
@@ -173,30 +175,31 @@ When a pin is selected, show a bottom sheet / modal with:
   page.tsx              # Tabs, map/friends/chats content, create + event modals
   globals.css
   /api
-    enhance/route.ts    # POST: Tavily + OpenAI → aiEnhanced
+    enhance/route.ts    # POST: call Phinite custom agent → aiEnhanced + category
     events/route.ts     # GET events (optional)
 /components
   MapView.tsx           # Map, pins (participant count), preview marker, data-marker
   CreateEventModal.tsx  # Form only; shown after location set (guard: if !pendingLocation return null)
-  EventModal.tsx        # Detail, join, AI suggestions block, participants with (you)
-  TabBar.tsx            # Bottom nav: Map | Friends | Activity Chats
-  FriendsView.tsx       # Hardcoded friends list
-  ActivityChatsView.tsx # Event list + fake chat thread
+  EventModal.tsx        # Detail, category pill, AI suggestions + "Powered by Phinite", participants with (you) + ShowUp/Vibe scores (two colors), join
+  TabBar.tsx            # Bottom nav: Map | Community | Activity Chats
+  FriendsView.tsx       # Community list: avatar, name, status, interest pills, ShowUp % + Vibe /5 (two color styles)
+  ActivityChatsView.tsx # Events filtered by current user in participants; list + fake chat thread; empty state when none joined
 /lib
-  store.ts              # Event type, in-memory array, seed 3 events (all with aiEnhanced + Dylan C)
-env.txt                 # NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN, TAVILY_API_KEY, OPENAI_API_KEY
+  store.ts              # Event type (with category), in-memory array, updateEventCategory; seed 3 events (aiEnhanced + category, no Dylan C in participants)
+  communityScores.ts    # PARTICIPANT_SCORES: name → { showUp, vibe } for Community + event participants list
+.env.example            # NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN, PHINITE_API_KEY, PHINITE_AGENT_URL (copy to .env.local)
 ```
 
 ---
 
 ## Priority Order
 
-1. Next.js + Tailwind + Mapbox setup; `lib/store.ts` with Event type and 3 seeded events (all with `aiEnhanced` and Dylan C in participants).
+1. Next.js + Tailwind + Mapbox setup; `lib/store.ts` with Event type (including `category`) and 3 seeded events (all with `aiEnhanced` and hardcoded `category`; **do not** put Dylan C in participants — user joins during demo).
 2. Map tab: map renders, pins from store, pin shows `participants.length`.
-3. Tab bar; Friends and Activity Chats as static/fake UI.
+3. Tab bar; Community and Activity Chats as static/fake UI (Community: interest pills, ShowUp % + Vibe /5 with two colors; `lib/communityScores.ts` for scores; Activity Chats filtered by `participants.includes("Dylan C")`, empty state when none).
 4. Create flow: + → tooltip → map click → modal (title, description, datetime) → Save; creator added as participant; `setEvents([...getEvents()])`.
-5. Event detail: open on pin click (with data-marker fix), Join, AI suggestions block.
-6. `/api/enhance`: Tavily + OpenAI, fallbacks; call on create and merge into event.
-7. Polish: loading “AI is planning…”, badges, Activity Chats fake messages.
+5. Event detail: open on pin click (with data-marker fix), **category pill** at top, Join, AI suggestions block with “Powered by Phinite” at bottom; **participants list** with ShowUp/Vibe scores (two colors) from `PARTICIPANT_SCORES` when available.
+6. `/api/enhance`: Call **Phinite custom agent** with event; parse response for `weather`, `nearbySuggestion`, `backupPlan`, **`category`**; fallbacks; call on create; merge `aiEnhanced` and `category` into state; `updateEventCategory` in store.
+7. Polish: loading “AI is planning…”, Activity Chats filter and empty state, fake messages.
 
 Following this document should allow rebuilding the full app from scratch during the hackathon.
